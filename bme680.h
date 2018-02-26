@@ -40,8 +40,8 @@
  * patent rights of the copyright holder.
  *
  * @file	bme680.h
- * @date	05 Feb 2018
- * @version	3.5.7
+ * @date	22 Feb 2018
+ * @version	3.5.8
  * @brief
  *
  */

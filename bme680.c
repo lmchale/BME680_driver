@@ -40,26 +40,14 @@
  * patent rights of the copyright holder.
  *
  * File		bme680.c
- * @date	05 Feb 2018
- * @version	3.5.7
+ * @date	22 Feb 2018
+ * @version	3.5.8
  *
  */
 
 /*! @file bme680.c
  @brief Sensor driver for BME680 sensor */
 #include "bme680.h"
-
-/**static variables */
-/**Look up table for the possible gas range values */
-uint32_t lookupTable1[16] = { UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647),
-	UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2130303777), UINT32_C(2147483647),
-	UINT32_C(2147483647), UINT32_C(2143188679), UINT32_C(2136746228), UINT32_C(2147483647), UINT32_C(2126008810),
-	UINT32_C(2147483647), UINT32_C(2147483647) };
-/**Look up table for the possible gas range values */
-uint32_t lookupTable2[16] = { UINT32_C(4096000000), UINT32_C(2048000000), UINT32_C(1024000000), UINT32_C(512000000),
-	UINT32_C(255744255), UINT32_C(127110228), UINT32_C(64000000), UINT32_C(32258064), UINT32_C(16016016), UINT32_C(
-		8000000), UINT32_C(4000000), UINT32_C(2000000), UINT32_C(1000000), UINT32_C(500000), UINT32_C(250000),
-	UINT32_C(125000) };
 
 /*!
  * @brief This internal API is used to read the calibrated data from the sensor.
@@ -90,6 +78,8 @@ static int8_t set_gas_config(struct bme680_dev *dev);
 
 /*!
  * @brief This internal API is used to get the gas configuration of the sensor.
+ * @note heatr_temp and heatr_dur values are currently register data
+ * and not the actual values set
  *
  * @param[in] dev	:Structure instance of bme680_dev.
  *
@@ -606,7 +596,7 @@ int8_t bme680_set_sensor_mode(struct bme680_dev *dev)
 	/* Check for null pointer in the device structure*/
 	rslt = null_ptr_check(dev);
 	if (rslt == BME680_OK) {
-		/* Call recursively until in sleep */
+		/* Call repeatedly until in sleep */
 		do {
 			rslt = bme680_get_regs(BME680_CONF_T_P_MODE_ADDR, &tmp_pow_mode, 1, dev);
 			if (rslt == BME680_OK) {
@@ -843,6 +833,8 @@ static int8_t set_gas_config(struct bme680_dev *dev)
 
 /*!
  * @brief This internal API is used to get the gas configuration of the sensor.
+ * @note heatr_temp and heatr_dur values are currently register data
+ * and not the actual values set
  */
 static int8_t get_gas_config(struct bme680_dev *dev)
 {
@@ -850,8 +842,7 @@ static int8_t get_gas_config(struct bme680_dev *dev)
 	/* starting address of the register array for burst read*/
 	uint8_t reg_addr1 = BME680_ADDR_SENS_CONF_START;
 	uint8_t reg_addr2 = BME680_ADDR_GAS_CONF_START;
-	uint8_t data_array[BME680_GAS_HEATER_PROF_LEN_MAX] = { 0 };
-	uint8_t index;
+	uint8_t reg_data = 0;
 
 	/* Check for null pointer in the device structure*/
 	rslt = null_ptr_check(dev);
@@ -862,16 +853,14 @@ static int8_t get_gas_config(struct bme680_dev *dev)
 		}
 
 		if (rslt == BME680_OK) {
-			rslt = bme680_get_regs(reg_addr1, data_array, BME680_GAS_HEATER_PROF_LEN_MAX, dev);
+			rslt = bme680_get_regs(reg_addr1, &reg_data, 1, dev);
 			if (rslt == BME680_OK) {
-				for (index = 0; index < BME680_GAS_HEATER_PROF_LEN_MAX; index++)
-					dev->gas_sett.heatr_temp = data_array[index];
-			}
-
-			rslt = bme680_get_regs(reg_addr2, data_array, BME680_GAS_HEATER_PROF_LEN_MAX, dev);
-			if (rslt == BME680_OK) {
-				for (index = 0; index < BME680_GAS_HEATER_PROF_LEN_MAX; index++)
-					dev->gas_sett.heatr_dur = data_array[index];
+				dev->gas_sett.heatr_temp = reg_data;
+				rslt = bme680_get_regs(reg_addr2, &reg_data, 1, dev);
+				if (rslt == BME680_OK) {
+					/* Heating duration register value */
+					dev->gas_sett.heatr_dur = reg_data;
+				}
 			}
 		}
 	}
@@ -909,7 +898,6 @@ static uint32_t calc_pressure(uint32_t pres_adc, const struct bme680_dev *dev)
 	int32_t var1 = 0;
 	int32_t var2 = 0;
 	int32_t var3 = 0;
-	int32_t var4 = 0;
 	int32_t pressure_comp = 0;
 
 	var1 = (((int32_t)dev->calib.t_fine) >> 1) - 64000;
@@ -924,8 +912,7 @@ static uint32_t calc_pressure(uint32_t pres_adc, const struct bme680_dev *dev)
 	var1 = ((32768 + var1) * (int32_t)dev->calib.par_p1) >> 15;
 	pressure_comp = 1048576 - pres_adc;
 	pressure_comp = (int32_t)((pressure_comp - (var2 >> 12)) * ((uint32_t)3125));
-	var4 = (1 << 30);
-	if (pressure_comp >= var4)
+	if (pressure_comp >= BME680_MAX_OVERFLOW_VAL)
 		pressure_comp = ((pressure_comp / (uint32_t)var1) << 1);
 	else
 		pressure_comp = ((pressure_comp << 1) / (uint32_t)var1);
@@ -989,6 +976,16 @@ static uint32_t calc_gas_resistance(uint16_t gas_res_adc, uint8_t gas_range, con
 	uint64_t var2;
 	int64_t var3;
 	uint32_t calc_gas_res;
+	/**Look up table 1 for the possible gas range values */
+	uint32_t lookupTable1[16] = { UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2147483647),
+		UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2130303777),
+		UINT32_C(2147483647), UINT32_C(2147483647), UINT32_C(2143188679), UINT32_C(2136746228),
+		UINT32_C(2147483647), UINT32_C(2126008810), UINT32_C(2147483647), UINT32_C(2147483647) };
+	/**Look up table 2 for the possible gas range values */
+	uint32_t lookupTable2[16] = { UINT32_C(4096000000), UINT32_C(2048000000), UINT32_C(1024000000), UINT32_C(512000000),
+		UINT32_C(255744255), UINT32_C(127110228), UINT32_C(64000000), UINT32_C(32258064), UINT32_C(16016016),
+		UINT32_C(8000000), UINT32_C(4000000), UINT32_C(2000000), UINT32_C(1000000), UINT32_C(500000),
+		UINT32_C(250000), UINT32_C(125000) };
 
 	var1 = (int64_t) ((1340 + (5 * (int64_t) dev->calib.range_sw_err)) *
 		((int64_t) lookupTable1[gas_range])) >> 16;

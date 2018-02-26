@@ -7,9 +7,9 @@ The sensor driver package includes bme680.h, bme680.c and bme680_defs.h files
 ## Version
 File          | Version | Date
 --------------|---------|-------------
-bme680.c      |  3.5.7	| 05 Feb 2018
-bme680.h      |  3.5.7	| 05 Feb 2018
-bme680_defs.h |  3.5.7	| 05 Feb 2018  
+bme680.c      |  3.5.8	| 22 Feb 2018
+bme680.h      |  3.5.8	| 22 Feb 2018
+bme680_defs.h |  3.5.8	| 22 Feb 2018  
 
 ## Integration details
 * Integrate bme680.h, bme680_defs.h and bme680.c file in to your project.
@@ -43,6 +43,10 @@ fill in the various parameters as shown below
 	gas_sensor.read = user_spi_read;
 	gas_sensor.write = user_spi_write;
 	gas_sensor.delay_ms = user_delay_ms;
+    /* amb_temp can be set to 25 prior to configuring the gas sensor 
+     * or by performing a few temperature readings without operating the gas sensor.
+     */
+	gas_sensor.amb_temp = 25;
 
 	int8_t rslt = BME680_OK;
 	rslt = bme680_init(&gas_sensor);
@@ -57,6 +61,11 @@ fill in the various parameters as shown below
 	gas_sensor.read = user_i2c_read;
 	gas_sensor.write = user_i2c_write;
 	gas_sensor.delay_ms = user_delay_ms;
+    /* amb_temp can be set to 25 prior to configuring the gas sensor 
+     * or by performing a few temperature readings without operating the gas sensor.
+     */
+	gas_sensor.amb_temp = 25;
+
 
 	int8_t rslt = BME680_OK;
 	rslt = bme680_init(&gas_sensor);

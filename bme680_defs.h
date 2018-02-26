@@ -40,8 +40,8 @@
  * patent rights of the copyright holder.
  *
  * @file	bme680_defs.h
- * @date	05 Feb 2018
- * @version	3.5.7
+ * @date	22 Feb 2018
+ * @version	3.5.8
  * @brief
  *
  */
@@ -226,7 +226,6 @@
 #define BME680_REG_BUFFER_LENGTH	UINT8_C(6)
 #define BME680_FIELD_DATA_LENGTH	UINT8_C(3)
 #define BME680_GAS_REG_BUF_LENGTH	UINT8_C(20)
-#define BME680_GAS_HEATER_PROF_LEN_MAX  UINT8_C(10)
 
 /** Settings selector */
 #define BME680_OST_SEL			UINT16_C(1)
@@ -317,6 +316,14 @@
 #define BME680_REG_RUN_GAS_INDEX	UINT8_C(1)
 #define BME680_REG_HCTRL_INDEX		UINT8_C(0)
 
+/** BME680 pressure calculation macros */
+/*! This max value is used to provide precedence to multiplication or division
+ * in pressure compensation equation to achieve least loss of precision and
+ * avoiding overflows.
+ * i.e Comparing value, BME680_MAX_OVERFLOW_VAL = INT32_C(1 << 30)
+ */
+#define BME680_MAX_OVERFLOW_VAL      INT32_C(0x40000000)
+
 /** Macro to combine two 8 bit data's to form a 16 bit data */
 #define BME680_CONCAT_BYTES(msb, lsb)	(((uint16_t)msb << 8) | (uint16_t)lsb)
 
@@ -334,7 +341,7 @@
 #define BME680_GET_BITS_POS_0(reg_data, bitname)  (reg_data & (bitname##_MSK))
 
 /** Type definitions */
-/*
+/*!
  * Generic communication function pointer
  * @param[in] dev_id: Place holder to store the id of the device structure
  *                    Can be used to store the index of the Chip select or
@@ -346,7 +353,7 @@
  */
 typedef int8_t (*bme680_com_fptr_t)(uint8_t dev_id, uint8_t reg_addr, uint8_t *data, uint16_t len);
 
-/*
+/*!
  * Delay function pointer
  * @param[in] period: Time period in milliseconds
  */
@@ -489,9 +496,9 @@ struct	bme680_gas_sett {
 	uint8_t heatr_ctrl;
 	/*! Run gas enable value */
 	uint8_t run_gas;
-	/*! Pointer to store heater temperature */
+	/*! Heater temperature value */
 	uint16_t heatr_temp;
-	/*! Pointer to store duration profile */
+	/*! Duration profile value */
 	uint16_t heatr_dur;
 };
 
@@ -507,7 +514,7 @@ struct	bme680_dev {
 	enum bme680_intf intf;
 	/*! Memory page used */
 	uint8_t mem_page;
-	/*! Ambient temperature in Degree C*/
+	/*! Ambient temperature in Degree C */
 	int8_t amb_temp;
 	/*! Sensor calibration data */
 	struct bme680_calib_data calib;
@@ -521,11 +528,11 @@ struct	bme680_dev {
 	uint8_t new_fields;
 	/*! Store the info messages */
 	uint8_t info_msg;
-	/*! Burst read structure */
+	/*! Bus read function pointer */
 	bme680_com_fptr_t read;
-	/*! Burst write structure */
+	/*! Bus write function pointer */
 	bme680_com_fptr_t write;
-	/*! Delay in ms */
+	/*! delay function pointer */
 	bme680_delay_fptr_t delay_ms;
 	/*! Communication function result */
 	int8_t com_rslt;
