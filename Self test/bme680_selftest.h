@@ -40,8 +40,8 @@
  * patent rights of the copyright holder.
  *
  * @file	bme680_selftest.h
- * @date	10 Oct 2017
- * @version	3.5.2
+ * @date	16 May 2018
+ * @version	3.5.3
  * @brief
  *
  */

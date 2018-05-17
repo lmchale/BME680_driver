@@ -40,8 +40,8 @@
  * patent rights of the copyright holder.
  *
  * File		bme680_selftest.c
- * @date	10 Oct 2017
- * @version	3.5.2
+ * @date	16 May 2018
+ * @version	3.5.3
  *
  */
 
@@ -172,13 +172,10 @@ static int8_t analyze_sensor_data(struct bme680_field_data *data, uint8_t n_meas
 		if (!(data[i].status & BME680_GASM_VALID_MSK))
 			self_test_failed++;
 
-	/* 3 cycles heating are completed(HT1/LT1, HT2/LT2,HT3/LT3)
-	   centroid gas ratio = 2*HT3 / (LT2+LT3) < 0.5*/
-	/* Invert formula to get integer values for centroid resistance */
 	if (n_meas >= 6)
 		cent_res = (data[3].gas_resistance + data[5].gas_resistance) / (2 * data[4].gas_resistance);
 
-	if ((cent_res < 2)) /*cent_res^-1 < 0.5 */
+	if ((cent_res * 5) < 6)
 		self_test_failed++;
 
 	if (self_test_failed)
