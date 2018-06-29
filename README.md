@@ -10,9 +10,9 @@ The sensor driver package includes bme680.h, bme680.c and bme680_defs.h files
 
 File          | Version | Date
 --------------|---------|-------------
-bme680.c      |  3.5.8    | 22 Feb 2018
-bme680.h      |  3.5.8    | 22 Feb 2018
-bme680_defs.h |  3.5.8    | 22 Feb 2018  
+bme680.c      |  3.5.9  | 19 Jun 2018
+bme680.h      |  3.5.9  | 19 Jun 2018
+bme680_defs.h |  3.5.9  | 19 Jun 2018  
 
 ## Integration details
 
