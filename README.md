@@ -1,4 +1,9 @@
-# BME680 sensor API
+# Usersapce C++ spidev library with BME680 SPI support
+
+See this github repo for example usage: https://github.com/lmchale/bme680
+
+
+# Bosch's BME680 sensor C API
 
 ## Introduction
 
